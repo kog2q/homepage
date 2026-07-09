@@ -3,30 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>KOG Chat - 王者荣耀查询</title>
+<title>KOG Chat</title>
 <style>
   body { font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px; background: #f0f2f5; }
-  h1 { color: #1a1a2e; margin-bottom: 10px; }
-  .card { background: white; border-radius: 16px; padding: 40px; max-width: 400px; margin: 30px auto; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-  .btn { display: block; margin: 12px auto; padding: 14px 32px; background: #2563eb; color: white; border-radius: 12px; text-decoration: none; font-size: 16px; transition: 0.2s; }
+  .card { background: white; border-radius: 16px; padding: 40px; max-width: 420px; margin: 30px auto; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .btn { display: block; margin: 12px auto; padding: 14px 32px; background: #2563eb; color: white; border-radius: 12px; text-decoration: none; font-size: 16px; }
   .btn:hover { background: #1d4ed8; }
   .admin { font-size: 13px; color: #6b7280; margin-top: 20px; }
   .admin a { color: #6b7280; }
-  .time { font-size: 12px; color: #9ca3af; margin-top: 16px; }
+  .time { font-size: 12px; color: #9ca3af; margin-top: 16px; width: 100%; text-align: center; }
+  .spinner { width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>王者荣耀查询</h1>
-  <p style="color:#6b7280;margin-bottom:24px">点击下方按钮进入聊天</p>
-  <a class="btn" href="https://bumper-racing-balanced-butterfly.trycloudflare.com/static/user/login.html">进入聊天</a>
-  <p class="admin">
-    管理员入口：<a href="https://bumper-racing-balanced-butterfly.trycloudflare.com/static/admin/login.html">管理后台</a>
-  </p>
-  <p class="time">更新时间: 2026-07-09 08:05:09</p>
+<div class="card" id="card">
+  <div class="spinner"></div>
+  <p style="color:#6b7280">Loading...</p>
 </div>
+<script>
+(async function(){
+  var t = Date.now();
+  try {
+    var ur = await fetch(‘url.txt?t=’+t, {cache:’no-store’});
+    var sr = await fetch(‘status.txt?t=’+t, {cache:’no-store’});
+    var url = (await ur.text()).trim();
+    var st  = (await sr.text()).trim();
+    var c = document.getElementById(‘card’);
+    var d = new Date().toLocaleString(‘zh-CN’);
+
+    var html = ‘’;
+    if (st === ‘resting’) {
+      html = ‘<h1 style="font-size:48px;margin-bottom:16px">&#x1f4a4;</h1><p style="color:#6b7280;font-size:16px">管理员正在休息</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>’;
+    } else if (st === ‘disk-warn’) {
+      html = ‘<h1 style="color:#dc2626">&#x26a0;&#xfe0f; 存储告警</h1><p style="color:#6b7280;font-size:16px">服务器磁盘空间已超过 80%</p><p style="color:#6b7280;font-size:16px">管理员正在处理，请稍后访问</p>’;
+    } else if (url && url.indexOf(‘trycloudflare’)>0) {
+      html = ‘<h1>王者荣耀查询</h1>’
+        + ‘<p style="color:#6b7280;margin-bottom:24px">点击下方按钮进入聊天</p>’
+        + ‘<a class="btn" href="’+url+’/static/user/login.html">进入聊天</a>’
+        + ‘<p class="admin">管理员入口：<a href="’+url+’/static/admin/login.html">管理后台</a></p>’
+        + ‘<p class="time">更新时间: ‘+d+’</p>’;
+    } else {
+      html = ‘<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>’;
+    }
+    c.innerHTML = html;
+  } catch(e) {
+    document.getElementById(‘card’).innerHTML = ‘<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>’;
+  }
+})();
+</script>
 </body>
 </html>
