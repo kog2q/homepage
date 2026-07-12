@@ -24,38 +24,50 @@
 <script>
 (function(){
   var h=document.getElementById('card'),
-      t=Date.now(),
       CHECK_URL='/api/auth/admin-info',
       TIMEOUT=8;
 
   function show(s){ h.innerHTML=s; }
-  function offline(){ show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>'); }
-  function online(url, st){
-    var d = st==='resting' ? '' : '';
+  function offline(){ show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p><p style="color:#9ca3af;font-size:12px;margin-top:8px" id="hint"></p>'); }
+  function online(url, st, t){
     if(st==='resting') return show('<h1 style="font-size:48px">&#x1f4a4;</h1><p style="color:#6b7280;font-size:16px">管理员正在休息</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>');
     if(st==='disk-warn') return show('<h1 style="color:#dc2626">&#x26a0; 存储告警</h1><p style="color:#6b7280;font-size:16px">服务器磁盘空间已超过80%</p><p style="color:#6b7280;font-size:16px">管理员正在处理，请稍后访问</p>');
-    if(url&&url.indexOf('trycloudflare')>0){
-      // Test connectivity: try to fetch from tunnel (no-cors)
-      var ctrl=new AbortController();
-      var to=setTimeout(function(){ctrl.abort();},TIMEOUT*1000);
-      fetch(url+CHECK_URL+'?t='+t,{mode:'no-cors',signal:ctrl.signal,cache:'no-store'})
-        .then(function(){ clearTimeout(to); showEntry(url); })
-        .catch(function(){ clearTimeout(to); offline(); });
-    }else{ offline(); }
+    if(!url || url.indexOf('trycloudflare')<0) return offline();
+    // Use CORS fetch — when tunnel alive, our server returns Access-Control-Allow-Origin:*.
+    // When tunnel dead, CF edge returns 502/1033 WITHOUT CORS headers, browser blocks it → goes to catch → offline.
+    var ctrl=new AbortController();
+    var to=setTimeout(function(){ctrl.abort();},TIMEOUT*1000);
+    fetch(url+CHECK_URL+'?t='+t,{signal:ctrl.signal,cache:'no-store'})
+      .then(function(r){
+        clearTimeout(to);
+        if(r.ok || r.status===401||r.status===403) showEntry(url);
+        else offline();
+      })
+      .catch(function(e){ clearTimeout(to); showOfflineWithRetry(url,t); });
+  }
+  var retrying = false;
+  function showOfflineWithRetry(url, t) {
+    var h=document.getElementById('hint');
+    show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p><p style="color:#9ca3af;font-size:12px;margin-top:8px" id="hint">正在自动重试...</p>');
+    if(!retrying){
+      retrying=true;
+      setTimeout(function(){retrying=false;online(url,'online',t);},5000);
+    }
   }
   function showEntry(url){
     show('<h1>王者荣耀查询</h1><p style="color:#6b7280;margin-bottom:24px">点击下方按钮进入聊天</p><a class="btn" href="'+url+'/static/user/login.html">进入聊天</a><p class="admin">管理员入口：<a href="'+url+'/static/admin/login.html">管理后台</a></p>');
   }
 
-  // Step 1: read status
-  fetch('status.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(s){
-    var st=s.trim();
-    if(st==='resting'||st==='disk-warn'){ online('',st); return; }
-    // Step 2: read URL
-    fetch('url.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(u){
-      online(u.trim(),st);
+  function start(t){
+    fetch('status.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(s){
+      var st=s.trim();
+      if(st==='resting'||st==='disk-warn'){ online('',st); return; }
+      fetch('url.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(u){
+        online(u.trim(),st,t);
+      }).catch(offline);
     }).catch(offline);
-  }).catch(offline);
+  }
+  start(Date.now());
 })();
 </script>
 </body>
