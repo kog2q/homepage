@@ -12,28 +12,50 @@
   .admin { font-size: 13px; color: #6b7280; margin-top: 20px; }
   .admin a { color: #6b7280; }
   .time { font-size: 12px; color: #9ca3af; margin-top: 16px; }
-  .spinner { width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 <div class="card" id="card">
   <div class="spinner"></div>
-  <p style="color:#6b7280">Loading...</p>
+  <p style="color:#6b7280">正在检测服务器状态...</p>
 </div>
 <script>
 (function(){
-  var t=Date.now();
-  fetch('url.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(u){
-    fetch('status.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(s){
-      var url=u.trim(), st=s.trim(), c=document.getElementById('card'), d=new Date().toLocaleString('zh-CN'), h='';
-      if(st==='resting') h='<h1 style="font-size:48px;margin-bottom:16px">&#x1f4a4;</h1><p style="color:#6b7280;font-size:16px">管理员正在休息</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>';
-      else if(st==='disk-warn') h='<h1 style="color:#dc2626">&#x26a0;&#xfe0f; 存储告警</h1><p style="color:#6b7280;font-size:16px">服务器磁盘空间已超过80%</p><p style="color:#6b7280;font-size:16px">管理员正在处理，请稍后访问</p>';
-      else if(url&&url.indexOf('trycloudflare')>0) h='<h1>王者荣耀查询</h1><p style="color:#6b7280;margin-bottom:24px">点击下方按钮进入聊天</p><a class="btn" href="'+url+'/static/user/login.html">进入聊天</a><p class="admin">管理员入口：<a href="'+url+'/static/admin/login.html">管理后台</a></p><p class="time">更新时间: '+d+'</p>';
-      else h='<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>';
-      c.innerHTML=h;
-    });
-  }).catch(function(){document.getElementById('card').innerHTML='<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>';});
+  var h=document.getElementById('card'),
+      t=Date.now(),
+      CHECK_URL='/api/auth/admin-info',
+      TIMEOUT=8;
+
+  function show(s){ h.innerHTML=s; }
+  function offline(){ show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>'); }
+  function online(url, st){
+    var d = st==='resting' ? '' : '';
+    if(st==='resting') return show('<h1 style="font-size:48px">&#x1f4a4;</h1><p style="color:#6b7280;font-size:16px">管理员正在休息</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>');
+    if(st==='disk-warn') return show('<h1 style="color:#dc2626">&#x26a0; 存储告警</h1><p style="color:#6b7280;font-size:16px">服务器磁盘空间已超过80%</p><p style="color:#6b7280;font-size:16px">管理员正在处理，请稍后访问</p>');
+    if(url&&url.indexOf('trycloudflare')>0){
+      // Test connectivity: try to fetch from tunnel (no-cors)
+      var ctrl=new AbortController();
+      var to=setTimeout(function(){ctrl.abort();},TIMEOUT*1000);
+      fetch(url+CHECK_URL+'?t='+t,{mode:'no-cors',signal:ctrl.signal,cache:'no-store'})
+        .then(function(){ clearTimeout(to); showEntry(url); })
+        .catch(function(){ clearTimeout(to); offline(); });
+    }else{ offline(); }
+  }
+  function showEntry(url){
+    show('<h1>王者荣耀查询</h1><p style="color:#6b7280;margin-bottom:24px">点击下方按钮进入聊天</p><a class="btn" href="'+url+'/static/user/login.html">进入聊天</a><p class="admin">管理员入口：<a href="'+url+'/static/admin/login.html">管理后台</a></p>');
+  }
+
+  // Step 1: read status
+  fetch('status.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(s){
+    var st=s.trim();
+    if(st==='resting'||st==='disk-warn'){ online('',st); return; }
+    // Step 2: read URL
+    fetch('url.txt?t='+t,{cache:'no-store'}).then(function(r){return r.text()}).then(function(u){
+      online(u.trim(),st);
+    }).catch(offline);
+  }).catch(offline);
 })();
 </script>
 </body>
