@@ -1,1 +1,1 @@
-https://wave-male-arabic-learned.trycloudflare.com
+https://api.trycloudflare.com
