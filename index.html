@@ -28,7 +28,7 @@
       TIMEOUT=8;
 
   function show(s){ h.innerHTML=s; }
-  function offline(){ show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p><p style="color:#9ca3af;font-size:12px;margin-top:8px" id="hint"></p>'); }
+  function offline(){ show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p><p style="color:#9ca3af;font-size:13px;margin-top:12px;line-height:1.6">如果页面离线了，可以直接去群里艾特管理员<br>一般是我出去玩或者网络出问题了</p><p style="color:#9ca3af;font-size:12px;margin-top:8px" id="hint"></p>'); }
   function online(url, st, t){
     if(st==='resting') return show('<h1 style="font-size:48px">&#x1f4a4;</h1><p style="color:#6b7280;font-size:16px">管理员正在休息</p><p style="color:#6b7280;font-size:16px">请稍后再来</p>');
     if(st==='disk-warn') return show('<h1 style="color:#dc2626">&#x26a0; 存储告警</h1><p style="color:#6b7280;font-size:16px">服务器磁盘空间已超过80%</p><p style="color:#6b7280;font-size:16px">管理员正在处理，请稍后访问</p>');
@@ -48,7 +48,7 @@
   var retrying = false;
   function showOfflineWithRetry(url, t) {
     var h=document.getElementById('hint');
-    show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p><p style="color:#9ca3af;font-size:12px;margin-top:8px" id="hint">正在自动重试...</p>');
+    show('<h1 style="font-size:48px;margin-bottom:16px">&#x1f534;</h1><p style="color:#6b7280;font-size:16px">服务器离线</p><p style="color:#6b7280;font-size:16px">请稍后再来</p><p style="color:#9ca3af;font-size:13px;margin-top:12px;line-height:1.6">如果页面离线了，可以直接去群里艾特管理员<br>一般是我出去玩或者网络出问题了</p><p style="color:#9ca3af;font-size:12px;margin-top:8px" id="hint">正在自动重试...</p>');
     if(!retrying){
       retrying=true;
       setTimeout(function(){retrying=false;online(url,'online',t);},5000);
